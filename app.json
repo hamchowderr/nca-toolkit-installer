@@ -1,0 +1,17 @@
+{
+  "name": "NCA Toolkit (Auto-Setup)",
+  "description": "One-click deployment for the No Code Architects Toolkit with automatic Storage & Service Account configuration.",
+  "env": {
+    "API_KEY": {
+      "description": "Create a secure password (API Key) to protect your toolkit. You will use this in n8n later.",
+      "required": true
+    }
+  },
+  "hooks": {
+    "postcreate": {
+      "commands": [
+        "bash setup.sh"
+      ]
+    }
+  }
+}
