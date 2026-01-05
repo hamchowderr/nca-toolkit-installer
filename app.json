@@ -1,5 +1,5 @@
 {
-  "name": "NCA Toolkit (Auto-Setup)",
+  "name": "nca-toolkit",
   "description": "One-click deployment for the No Code Architects Toolkit with automatic Storage & Service Account configuration.",
   "env": {
     "API_KEY": {
@@ -7,7 +7,17 @@
       "required": true
     }
   },
+  "options": {
+    "allow-unauthenticated": true,
+    "memory": "2Gi",
+    "cpu": "2"
+  },
   "hooks": {
+    "prebuild": {
+      "commands": [
+        "gcloud services enable artifactregistry.googleapis.com --quiet"
+      ]
+    },
     "postcreate": {
       "commands": [
         "bash setup.sh"

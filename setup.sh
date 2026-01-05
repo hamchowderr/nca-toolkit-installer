@@ -52,6 +52,7 @@ gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
 # 6. INJECT CONFIG INTO CLOUD RUN
 echo "🔄 Updating Cloud Run configuration..."
 gcloud run services update $K_SERVICE \
+    --service-account=$SA_NAME@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com \
     --update-env-vars=GCP_BUCKET_NAME=$BUCKET_NAME \
     --region=$GOOGLE_CLOUD_REGION \
     --quiet
