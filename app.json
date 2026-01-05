@@ -13,11 +13,6 @@
     "cpu": "2"
   },
   "hooks": {
-    "prebuild": {
-      "commands": [
-        "gcloud services enable artifactregistry.googleapis.com --quiet"
-      ]
-    },
     "postcreate": {
       "commands": [
         "bash setup.sh"
