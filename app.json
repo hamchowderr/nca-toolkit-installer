@@ -13,6 +13,14 @@
     "cpu": "2"
   },
   "hooks": {
+    "prebuild": {
+      "commands": [
+        "echo '🛠️ Enabling Build APIs...'",
+        "gcloud services enable artifactregistry.googleapis.com cloudbuild.googleapis.com --quiet",
+        "echo '⏳ Waiting for APIs...'",
+        "sleep 10"
+      ]
+    },
     "postcreate": {
       "commands": [
         "bash setup.sh"
