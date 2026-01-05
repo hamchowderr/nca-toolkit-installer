@@ -15,8 +15,8 @@
   "hooks": {
     "prebuild": {
       "commands": [
-        "echo '🛠️ Enabling Build APIs...'",
-        "gcloud services enable artifactregistry.googleapis.com cloudbuild.googleapis.com --quiet",
+        "echo \"🛠️ Enabling Build APIs for project: $GOOGLE_CLOUD_PROJECT\"",
+        "gcloud services enable artifactregistry.googleapis.com cloudbuild.googleapis.com --quiet --project $GOOGLE_CLOUD_PROJECT",
         "echo '⏳ Waiting for APIs...'",
         "sleep 10"
       ]
