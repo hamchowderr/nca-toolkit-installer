@@ -57,41 +57,60 @@ echo -e "${GREEN}✓ Authenticated as: ${ACCOUNT}${NC}"
 
 echo ""
 echo -e "${YELLOW}[2/8] Project Selection${NC}"
-echo ""
 
-# List available projects in a readable format
-echo "Available projects:"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-printf "  ${BLUE}%-45s${NC} %s\n" "PROJECT ID" "NAME"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-gcloud projects list --format="csv[no-heading](projectId,name)" 2>/dev/null | while IFS=',' read -r id name; do
-    printf "  %-45s %s\n" "$id" "$name"
-done
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-echo ""
-read -p "Enter your GCP Project ID (or 'new' to create one): " PROJECT_ID
-
-if [ "$PROJECT_ID" == "new" ]; then
-    read -p "Enter new project ID (lowercase, no spaces): " PROJECT_ID
-    read -p "Enter project name: " PROJECT_NAME
+# Check if project is already set (from tutorial panel or environment)
+if [ -n "$GOOGLE_CLOUD_PROJECT" ]; then
+    PROJECT_ID="$GOOGLE_CLOUD_PROJECT"
+    echo -e "${GREEN}✓ Using project from Cloud Shell: ${PROJECT_ID}${NC}"
+elif [ -n "$DEVSHELL_PROJECT_ID" ]; then
+    PROJECT_ID="$DEVSHELL_PROJECT_ID"
+    echo -e "${GREEN}✓ Using project from Cloud Shell: ${PROJECT_ID}${NC}"
+else
+    echo ""
+    # Get projects into an array
+    mapfile -t PROJECTS < <(gcloud projects list --format="value(projectId)" 2>/dev/null)
+    mapfile -t PROJECT_NAMES < <(gcloud projects list --format="value(name)" 2>/dev/null)
     
-    echo "Creating project..."
-    gcloud projects create "$PROJECT_ID" --name="$PROJECT_NAME" || {
-        echo -e "${RED}Failed to create project. It may already exist or you lack permissions.${NC}"
+    if [ ${#PROJECTS[@]} -eq 0 ]; then
+        echo -e "${RED}No projects found. Please create a project first.${NC}"
         exit 1
-    }
+    fi
+    
+    echo "Available projects:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    printf "  ${BLUE}%-4s %-40s %s${NC}\n" "#" "PROJECT ID" "NAME"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    for i in "${!PROJECTS[@]}"; do
+        printf "  %-4s %-40s %s\n" "$((i+1))" "${PROJECTS[$i]}" "${PROJECT_NAMES[$i]}"
+    done
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    
+    while true; do
+        read -p "Enter project number (1-${#PROJECTS[@]}): " PROJECT_NUM
+        
+        # Validate input is a number in range
+        if [[ "$PROJECT_NUM" =~ ^[0-9]+$ ]] && [ "$PROJECT_NUM" -ge 1 ] && [ "$PROJECT_NUM" -le ${#PROJECTS[@]} ]; then
+            PROJECT_ID="${PROJECTS[$((PROJECT_NUM-1))]}"
+            break
+        else
+            echo -e "${RED}Invalid selection. Please enter a number between 1 and ${#PROJECTS[@]}${NC}"
+        fi
+    done
 fi
 
 # Set the project
-gcloud config set project "$PROJECT_ID"
+gcloud config set project "$PROJECT_ID" --quiet
 echo -e "${GREEN}✓ Using project: ${PROJECT_ID}${NC}"
 
 # Check if billing is enabled
 BILLING_ENABLED=$(gcloud beta billing projects describe "$PROJECT_ID" --format="value(billingEnabled)" 2>/dev/null || echo "false")
 if [ "$BILLING_ENABLED" != "True" ]; then
-    echo -e "${RED}ERROR: Billing is not enabled for this project.${NC}"
-    echo "Please enable billing at: https://console.cloud.google.com/billing/linkedaccount?project=${PROJECT_ID}"
+    echo ""
+    echo -e "${RED}⚠ Billing is not enabled for this project.${NC}"
+    echo -e "Please enable billing at:"
+    echo -e "${BLUE}https://console.cloud.google.com/billing/linkedaccount?project=${PROJECT_ID}${NC}"
     echo ""
     read -p "Press Enter after enabling billing to continue..."
 fi
@@ -127,26 +146,26 @@ echo -e "${GREEN}✓ All APIs enabled${NC}"
 echo ""
 echo -e "${YELLOW}[4/8] Configuration${NC}"
 
-# Generate a random API key suggestion
+# Generate a random API key
 RANDOM_KEY=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 32)
 
-read -p "Enter API key for your NCA Toolkit (or press Enter for random): " API_KEY
+echo ""
+echo "Your API key protects your toolkit. Save it somewhere safe!"
+read -p "Enter API key (or press Enter for auto-generated): " API_KEY
 API_KEY=${API_KEY:-$RANDOM_KEY}
+echo -e "${GREEN}✓ API Key set${NC}"
 
 # Region selection
 echo ""
-echo "Available regions (recommended: us-central1, europe-west1, asia-east1):"
+echo "Recommended regions: us-central1 (US), europe-west1 (EU), asia-east1 (Asia)"
 read -p "Enter Cloud Run region [us-central1]: " REGION
 REGION=${REGION:-us-central1}
 
-# Service name
-read -p "Enter Cloud Run service name [nca-toolkit]: " SERVICE_NAME
-SERVICE_NAME=${SERVICE_NAME:-nca-toolkit}
+# Service name - default is fine for most users
+SERVICE_NAME="nca-toolkit"
 
 # Bucket name (must be globally unique)
-SUGGESTED_BUCKET="${PROJECT_ID}-nca-toolkit"
-read -p "Enter Cloud Storage bucket name [${SUGGESTED_BUCKET}]: " BUCKET_NAME
-BUCKET_NAME=${BUCKET_NAME:-$SUGGESTED_BUCKET}
+BUCKET_NAME="${PROJECT_ID}-nca-toolkit"
 
 # Service account name
 SA_NAME="nca-toolkit-sa"
@@ -208,7 +227,8 @@ if gsutil ls -b "gs://${BUCKET_NAME}" &>/dev/null; then
 else
     gsutil mb -l "$REGION" "gs://${BUCKET_NAME}" || {
         echo -e "${RED}Failed to create bucket. Name may be taken globally.${NC}"
-        read -p "Enter a different bucket name: " BUCKET_NAME
+        BUCKET_NAME="${PROJECT_ID}-nca-toolkit-$(date +%s)"
+        echo "  Trying alternative name: ${BUCKET_NAME}"
         gsutil mb -l "$REGION" "gs://${BUCKET_NAME}"
     }
     echo "  Created bucket: ${BUCKET_NAME}"
@@ -227,7 +247,7 @@ echo -e "${GREEN}✓ Bucket configured with public read access${NC}"
 
 echo ""
 echo -e "${YELLOW}[7/8] Deploying to Cloud Run...${NC}"
-echo "  This may take a few minutes..."
+echo "  This may take 2-3 minutes..."
 
 gcloud run deploy "$SERVICE_NAME" \
     --image="$DOCKER_IMAGE" \

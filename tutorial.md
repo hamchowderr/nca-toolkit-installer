@@ -7,47 +7,41 @@
 This tutorial deploys the **No-Code Architects Toolkit API** to Google Cloud Platform.
 
 **What you'll get:**
-- Cloud Run service (16GB RAM, 4 CPU, Gen2)
-- Cloud Storage bucket with public read access
-- Service account with proper permissions
+- Cloud Run service (16GB RAM, 4 CPU)
+- Cloud Storage bucket
 - Your API endpoint and key
-
-<walkthrough-tutorial-difficulty difficulty="2"></walkthrough-tutorial-difficulty>
 
 Click **Next** to begin.
 
 ## Select Your Project
 
-First, select or create a Google Cloud project.
+Select the Google Cloud project where you want to deploy:
 
 <walkthrough-project-setup billing="true"></walkthrough-project-setup>
 
-**Important:** 
-- Billing must be enabled
-- New accounts get $300 in free credits
+**Important:** Billing must be enabled on your project.
 
-Once your project is selected, click **Next**.
+Once selected, click **Next**.
 
-## Run the Deployment Script
+## Run the Installer
 
-Now let's deploy. Run this command in the terminal below:
+Run this command in the terminal:
 
 ```bash
 chmod +x deploy.sh && ./deploy.sh
 ```
 
-The script will prompt you for:
-- **Project ID** - Your selected project
-- **API Key** - Choose your own or press Enter for random
-- **Region** - Default is `us-central1`
-- **Service Name** - Default is `nca-toolkit`
-- **Bucket Name** - Default is `{project}-nca-toolkit`
+The script will:
+1. ✅ Use the project you selected above
+2. Ask for your **API key** (or generate one)
+3. Ask for your preferred **region**
+4. Create everything automatically
 
-<walkthrough-footnote>Deployment takes 3-5 minutes. Don't close the window.</walkthrough-footnote>
+<walkthrough-footnote>Deployment takes about 3 minutes.</walkthrough-footnote>
 
-## Deployment Complete
+## Save Your Credentials
 
-When finished, you'll see:
+When complete, you'll see:
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
@@ -56,44 +50,22 @@ When finished, you'll see:
 
   Service URL:    https://nca-toolkit-xxxxx.run.app
   API Key:        your-api-key-here
-  Bucket:         your-bucket-name
 ```
 
-**Save these values!** They're also in `~/nca-toolkit-config.txt`
+**Save these!** They're also stored in `~/nca-toolkit-config.txt`
 
-## Test Your API
-
-Verify the deployment works:
-
-```bash
-# View your saved config
-cat ~/nca-toolkit-config.txt
-```
-
-Then test the API (replace with your values):
-
-```bash
-curl -X GET "YOUR_SERVICE_URL/v1/toolkit/test" \
-  -H "x-api-key: YOUR_API_KEY"
-```
-
-You should get a success response.
-
-## Next Steps
+## Done!
 
 <walkthrough-conclusion-trophy></walkthrough-conclusion-trophy>
 
 **Your NCA Toolkit is ready!**
 
-### Set up Postman
-1. Import [Postman Collection](https://bit.ly/49Gkh61)
-2. Set `base_url` to your Service URL
-3. Set `x-api-key` to your API Key
+### Test it:
+```bash
+cat ~/nca-toolkit-config.txt
+```
 
-### Useful Links
-- [Cloud Run Console](https://console.cloud.google.com/run)
-- [API Documentation](https://github.com/stephengpope/no-code-architects-toolkit/tree/main/docs)
-- [NCA Community](https://skool.com/no-code-architects)
-
-### Need Help?
-Join the [No-Code Architects Community](https://www.skool.com/no-code-architects)
+### Next steps:
+- Import [Postman Collection](https://bit.ly/49Gkh61)
+- Read the [API Docs](https://github.com/stephengpope/no-code-architects-toolkit/tree/main/docs)
+- Join [NCA Community](https://skool.com/no-code-architects)
