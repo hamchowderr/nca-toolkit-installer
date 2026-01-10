@@ -4,6 +4,18 @@ Deploy the [No-Code Architects Toolkit](https://github.com/stephengpope/no-code-
 
 ---
 
+## Why This Exists
+
+The [NCA Toolkit](https://github.com/stephengpope/no-code-architects-toolkit) is an incredibly powerful API for video/audio/image processing - but deploying it to Google Cloud manually is tedious. You need to enable APIs, create service accounts, configure IAM roles, generate credentials, create buckets, set permissions, and configure Cloud Run with the right specs. One wrong step and it doesn't work.
+
+This installer automates all of that into a single script.
+
+**Why Google Cloud?**
+
+Along with Hostinger, Google Cloud is one of the best platforms for hosting the NCA Toolkit because **you only pay for what you use**. With Cloud Run's scale-to-zero, you're not paying for idle servers - only actual processing time. Perfect for automation workflows that run periodically rather than 24/7.
+
+---
+
 ## 🚀 Deploy Now
 
 Click the button below to open Google Cloud Shell and run the installer:
