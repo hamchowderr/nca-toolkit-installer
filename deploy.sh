@@ -57,10 +57,17 @@ echo -e "${GREEN}✓ Authenticated as: ${ACCOUNT}${NC}"
 
 echo ""
 echo -e "${YELLOW}[2/8] Project Selection${NC}"
+echo ""
 
-# List available projects
+# List available projects in a readable format
 echo "Available projects:"
-gcloud projects list --format="table(projectId, name)" 2>/dev/null || true
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+printf "  ${BLUE}%-45s${NC} %s\n" "PROJECT ID" "NAME"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+gcloud projects list --format="csv[no-heading](projectId,name)" 2>/dev/null | while IFS=',' read -r id name; do
+    printf "  %-45s %s\n" "$id" "$name"
+done
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 echo ""
 read -p "Enter your GCP Project ID (or 'new' to create one): " PROJECT_ID
