@@ -203,15 +203,30 @@ gcloud projects add-iam-policy-binding "$PROJECT_ID" \
     --role="roles/viewer" \
     --quiet > /dev/null 2>&1 || true
 
-# Grant current user permission to deploy as the default compute service account
+# Grant current user permission to act as the NCA toolkit service account
 echo "  Granting deployment permissions..."
+gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
+    --member="user:${ACCOUNT}" \
+    --role="roles/iam.serviceAccountUser" \
+    --quiet > /dev/null 2>&1 || true
+
+# Grant Cloud Run Admin to current user
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --member="user:${ACCOUNT}" \
+    --role="roles/run.admin" \
+    --quiet > /dev/null 2>&1 || true
+
+# Also try to grant on default compute SA (may fail due to org policy, that's ok)
 PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format="value(projectNumber)")
 DEFAULT_COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
-
 gcloud iam service-accounts add-iam-policy-binding "$DEFAULT_COMPUTE_SA" \
     --member="user:${ACCOUNT}" \
     --role="roles/iam.serviceAccountUser" \
     --quiet > /dev/null 2>&1 || true
+
+# Brief pause for IAM propagation
+echo "  Waiting for permissions to propagate..."
+sleep 10
 
 # Generate JSON key
 echo "  Generating service account key..."
@@ -275,6 +290,7 @@ gcloud run deploy "$SERVICE_NAME" \
     --platform=managed \
     --region="$REGION" \
     --allow-unauthenticated \
+    --service-account="$SA_EMAIL" \
     --memory="$CLOUD_RUN_MEMORY" \
     --cpu="$CLOUD_RUN_CPU" \
     --timeout="$CLOUD_RUN_TIMEOUT" \
