@@ -1,102 +1,166 @@
-# No-Code Architects Toolkit (One-Click Installer)
+# NCA Toolkit - One-Click GCP Installer
 
-This repository provides an automated installer for Stephen Pope's **NCA Toolkit**. It automatically provisions the necessary Cloud Storage buckets and Service Accounts so you don't have to do it manually.
-
----
-
-## ⚠️ READ BEFORE CLICKING
-
-1. **Create a NEW Google Cloud Project** — When prompted, create a dedicated project (e.g., `nca-toolkit-production`). Don't deploy this into a project that contains other apps or sensitive data.
-
-2. **Billing Required** — You need a Google Cloud account with a valid credit card on file (even for the free tier).
-
-3. **Wait for it** — The setup takes about **3 minutes**. Do not close the window until you see the green success checkmark.
-
-4. **API Key** — When asked, create a strong password (e.g., `my-secret-key-123`). You will need this later to connect your automation platform.
+Deploy the [No-Code Architects Toolkit](https://github.com/stephengpope/no-code-architects-toolkit) to Google Cloud Platform with one click.
 
 ---
 
 ## 🚀 Deploy Now
 
-Click the button below to start the installation in Google Cloud Shell.
+Click the button below to open Google Cloud Shell and run the installer:
 
-[![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/hamchowderr/nca-toolkit-installer&cloudshell_git_branch=main&cloudshell_workspace=.&cloudshell_tutorial=tutorial.md)
 
 ---
 
-## What does this do?
+## Prerequisites
 
-- Deploys the `stephengpope/no-code-architects-toolkit` Docker image
-- Creates a private **Service Account** with storage permissions
-- Creates a publicly accessible **Storage Bucket** (auto-named)
-- Configures the toolkit to use these resources automatically
-- Runs a test API call to verify everything works
+Before clicking the button, make sure you have:
+
+- ✅ **Google Workspace account** (recommended)
+- ✅ **GCP Project** with billing enabled
+- ✅ ~5 minutes
+
+> **New to GCP?** New accounts get $300 in free credits. [Sign up here](https://cloud.google.com/).
+
+---
+
+## What This Installer Does
+
+| Step | Manual Process | This Installer |
+|------|---------------|----------------|
+| 1 | Enable 5 APIs manually | ✅ Automatic |
+| 2 | Create service account | ✅ Automatic |
+| 3 | Assign IAM roles | ✅ Automatic |
+| 4 | Generate JSON credentials | ✅ Automatic |
+| 5 | Create storage bucket | ✅ Automatic + public read |
+| 6 | Deploy Cloud Run (16GB, 4 CPU, Gen2) | ✅ Pre-configured |
+| 7 | Set all environment variables | ✅ Automatic |
+
+**Time:** ~30 min manual → ~5 min with installer
+
+---
+
+## Deployment Specs
+
+The installer configures Cloud Run with these settings (matching [official NCA docs](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md)):
+
+| Setting | Value |
+|---------|-------|
+| Memory | 16 GB |
+| CPU | 4 vCPUs |
+| Min Instances | 0 (scale to zero) |
+| Max Instances | 5 |
+| Timeout | 300 seconds |
+| Execution Environment | Gen2 |
+| CPU Boost | Enabled |
+
+---
+
+## What You'll Be Asked
+
+The script prompts for:
+
+1. **Project ID** - Select existing or create new
+2. **API Key** - Your choice or auto-generated (save this!)
+3. **Region** - Where to deploy (default: `us-central1`)
+4. **Service Name** - Name for Cloud Run service (default: `nca-toolkit`)
+5. **Bucket Name** - For file storage (default: `{project-id}-nca-toolkit`)
 
 ---
 
 ## After Deployment
 
-1. Copy your Cloud Run URL from the deployment logs (looks like `https://nca-toolkit-xxxxx-xx.a.run.app`)
-2. Copy your Bucket Name from the deployment logs
-3. Use the test request below to verify your setup
+You'll receive:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║                    DEPLOYMENT COMPLETE!                       ║
+╚══════════════════════════════════════════════════════════════╝
+
+  Service URL:    https://nca-toolkit-xxxxx-xx.a.run.app
+  API Key:        your-api-key-here
+  Bucket:         your-project-nca-toolkit
+  Region:         us-central1
+```
+
+Config is also saved to `~/nca-toolkit-config.txt` in Cloud Shell.
 
 ---
 
-## Test Your Installation
-
-Use this request to verify your NCA Toolkit is working. This works in **n8n**, **Make**, or any automation platform that supports HTTP requests.
+## Test Your Deployment
 
 ```bash
-curl -X GET "https://YOUR-CLOUD-RUN-URL/v1/toolkit/test" \
-  -H "x-api-key: YOUR-API-KEY"
+curl -X GET "YOUR_SERVICE_URL/v1/toolkit/test" \
+  -H "x-api-key: YOUR_API_KEY"
 ```
 
-**Replace:**
-- `YOUR-CLOUD-RUN-URL` — Your Cloud Run URL from the deployment logs
-- `YOUR-API-KEY` — The API key you created during setup
-
-**Expected Response (200 OK):**
-
+**Expected response:**
 ```json
 {
   "code": 200,
-  "message": "success",
-  "response": "https://storage.googleapis.com/nca-toolkit-storage-xxxxx/success.txt"
+  "message": "success"
 }
 ```
 
-If you get this response, your toolkit is ready to use!
+---
+
+## Using with n8n / Make
+
+### n8n
+1. Add **HTTP Request** node
+2. Method: `GET`
+3. URL: `https://YOUR-SERVICE-URL/v1/toolkit/test`
+4. Header: `x-api-key` = `YOUR-API-KEY`
+
+### Make
+1. Add **HTTP > Make a request** module
+2. Method: `GET`
+3. URL: `https://YOUR-SERVICE-URL/v1/toolkit/test`
+4. Header: `x-api-key` = `YOUR-API-KEY`
+
+### Postman
+1. Import the [Postman Collection](https://bit.ly/49Gkh61)
+2. Set environment variables:
+   - `base_url`: Your Service URL
+   - `x-api-key`: Your API Key
 
 ---
 
-## Platform Setup Guides
+## Manual Installation (Alternative)
 
-### n8n
-1. Add an **HTTP Request** node
-2. Set method to `GET`
-3. Set URL to `https://YOUR-CLOUD-RUN-URL/v1/toolkit/test`
-4. Add header: `x-api-key` = `YOUR-API-KEY`
+If the button doesn't work, run manually in [Cloud Shell](https://shell.cloud.google.com):
 
-### Make
-1. Add an **HTTP > Make a request** module
-2. Set method to `GET`
-3. Set URL to `https://YOUR-CLOUD-RUN-URL/v1/toolkit/test`
-4. Add header: `x-api-key` = `YOUR-API-KEY`
+```bash
+git clone https://github.com/hamchowderr/nca-toolkit-installer.git
+cd nca-toolkit-installer
+chmod +x deploy.sh
+./deploy.sh
+```
 
 ---
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| `401 Unauthorized` | Check your API key is correct |
-| `500 Internal Server Error` | Wait 30 seconds and try again — Cloud Run may still be starting |
-| Bucket permission errors | Verify the setup script completed successfully |
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| "Billing not enabled" | No payment method | [Enable billing](https://console.cloud.google.com/billing) |
+| "Permission denied" on service account | Org policy | Contact Workspace admin |
+| "Public access prevention" on bucket | Org policy | Contact Workspace admin or use different project |
+| Deployment timeout | Large image pull | Wait and retry |
+| `401 Unauthorized` on test | Wrong API key | Check key matches what you entered |
 
 ---
 
 ## Resources
 
-- [NCA Toolkit GitHub](https://github.com/stephengpope/no-code-architects-toolkit)
-- [NCA Toolkit API Documentation](https://github.com/stephengpope/no-code-architects-toolkit/tree/main/docs)
-- [No-Code Architects Community](https://www.skool.com/no-code-architects)
+- [NCA Toolkit Repository](https://github.com/stephengpope/no-code-architects-toolkit)
+- [Full GCP Installation Docs](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md)
+- [API Documentation](https://github.com/stephengpope/no-code-architects-toolkit/tree/main/docs)
+- [Video Tutorial](https://youtu.be/6bC93sek9v8)
+- [NCA Community](https://skool.com/no-code-architects)
+
+---
+
+## License
+
+This installer is provided as-is. The NCA Toolkit itself is licensed under [GPL-2.0](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/LICENSE).
