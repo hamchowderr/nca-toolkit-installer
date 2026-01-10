@@ -203,6 +203,16 @@ gcloud projects add-iam-policy-binding "$PROJECT_ID" \
     --role="roles/viewer" \
     --quiet > /dev/null 2>&1 || true
 
+# Grant current user permission to deploy as the default compute service account
+echo "  Granting deployment permissions..."
+PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format="value(projectNumber)")
+DEFAULT_COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+
+gcloud iam service-accounts add-iam-policy-binding "$DEFAULT_COMPUTE_SA" \
+    --member="user:${ACCOUNT}" \
+    --role="roles/iam.serviceAccountUser" \
+    --quiet > /dev/null 2>&1 || true
+
 # Generate JSON key
 echo "  Generating service account key..."
 KEY_FILE="/tmp/nca-toolkit-sa-key.json"
