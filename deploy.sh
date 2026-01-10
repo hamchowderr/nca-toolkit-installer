@@ -184,34 +184,32 @@ SA_EXISTS=$(gcloud iam service-accounts list --filter="email:${SA_EMAIL}" --form
 if [ -z "$SA_EXISTS" ]; then
     gcloud iam service-accounts create "$SA_NAME" \
         --display-name="NCA Toolkit Service Account" \
-        --description="Service account for NCA Toolkit API"
+        --description="Service account for NCA Toolkit API" \
+        --quiet
     echo "  Created service account: ${SA_EMAIL}"
 else
     echo "  Service account already exists: ${SA_EMAIL}"
 fi
 
-# Assign roles
+# Assign roles (suppress output)
 echo "  Assigning roles..."
-ROLES=(
-    "roles/storage.admin"
-    "roles/viewer"
-)
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --member="serviceAccount:${SA_EMAIL}" \
+    --role="roles/storage.admin" \
+    --quiet > /dev/null 2>&1 || true
 
-for role in "${ROLES[@]}"; do
-    gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-        --member="serviceAccount:${SA_EMAIL}" \
-        --role="$role" \
-        --quiet 2>/dev/null || true
-done
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --member="serviceAccount:${SA_EMAIL}" \
+    --role="roles/viewer" \
+    --quiet > /dev/null 2>&1 || true
 
 # Generate JSON key
 echo "  Generating service account key..."
 KEY_FILE="/tmp/nca-toolkit-sa-key.json"
 gcloud iam service-accounts keys create "$KEY_FILE" \
     --iam-account="$SA_EMAIL" \
-    --quiet
+    --quiet 2>/dev/null
 
-GCP_SA_CREDENTIALS=$(cat "$KEY_FILE" | tr -d '\n')
 echo -e "${GREEN}✓ Service account configured${NC}"
 
 # =============================================================================
@@ -236,8 +234,8 @@ fi
 
 # Configure bucket for public read access
 echo "  Configuring bucket permissions..."
-gsutil uniformbucketlevelaccess set on "gs://${BUCKET_NAME}"
-gsutil iam ch allUsers:objectViewer "gs://${BUCKET_NAME}"
+gsutil uniformbucketlevelaccess set on "gs://${BUCKET_NAME}" 2>/dev/null
+gsutil iam ch allUsers:objectViewer "gs://${BUCKET_NAME}" 2>/dev/null
 
 echo -e "${GREEN}✓ Bucket configured with public read access${NC}"
 
@@ -248,6 +246,19 @@ echo -e "${GREEN}✓ Bucket configured with public read access${NC}"
 echo ""
 echo -e "${YELLOW}[7/8] Deploying to Cloud Run...${NC}"
 echo "  This may take 2-3 minutes..."
+
+# Read the JSON key and compact it to a single line
+GCP_SA_CREDENTIALS=$(cat "$KEY_FILE" | jq -c .)
+
+# Create a temporary env vars file
+ENV_FILE="/tmp/nca-toolkit-env.yaml"
+cat > "$ENV_FILE" << ENVEOF
+API_KEY: ${API_KEY}
+GCP_BUCKET_NAME: ${BUCKET_NAME}
+ENVEOF
+
+# Append the credentials separately to handle special characters
+echo "GCP_SA_CREDENTIALS: '${GCP_SA_CREDENTIALS}'" >> "$ENV_FILE"
 
 gcloud run deploy "$SERVICE_NAME" \
     --image="$DOCKER_IMAGE" \
@@ -262,10 +273,11 @@ gcloud run deploy "$SERVICE_NAME" \
     --port="$CONTAINER_PORT" \
     --cpu-boost \
     --execution-environment=gen2 \
-    --set-env-vars="API_KEY=${API_KEY}" \
-    --set-env-vars="GCP_BUCKET_NAME=${BUCKET_NAME}" \
-    --set-env-vars="^@^GCP_SA_CREDENTIALS=${GCP_SA_CREDENTIALS}" \
+    --env-vars-file="$ENV_FILE" \
     --quiet
+
+# Cleanup env file
+rm -f "$ENV_FILE"
 
 # Get the service URL
 SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region="$REGION" --format="value(status.url)")
