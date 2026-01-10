@@ -42,29 +42,44 @@ Before clicking the button, make sure you have:
 
 ## Deployment Specs
 
-The installer configures Cloud Run with these settings (matching [official NCA docs](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md)):
+The installer configures Cloud Run with these settings (based on [official NCA docs](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md)):
 
 | Setting | Value |
 |---------|-------|
 | Memory | 16 GB |
 | CPU | 4 vCPUs |
 | Min Instances | 0 (scale to zero) |
-| Max Instances | 5 |
+| Max Instances | 2 |
 | Timeout | 300 seconds |
 | Execution Environment | Gen2 |
 | CPU Boost | Enabled |
+
+### Scaling & Quotas
+
+The default **max 2 instances** is set to work within GCP's default memory quota (~40GB per region). This supports 2-4 concurrent video processing jobs.
+
+**Need more capacity?**
+
+1. Request a quota increase: [GCP Console → IAM & Admin → Quotas](https://console.cloud.google.com/iam-admin/quotas) → search "Total memory" → Request increase
+2. After approval, edit your Cloud Run service to increase max instances
+
+| Max Instances | Total Memory | Concurrent Jobs |
+|---------------|--------------|------------------|
+| 2 (default) | 32 GB | ~2-4 |
+| 5 | 80 GB | ~5-10 |
+| 10 | 160 GB | ~10-20 |
 
 ---
 
 ## What You'll Be Asked
 
-The script prompts for:
+The script prompts for just 2 things:
 
-1. **Project ID** - Select existing or create new
-2. **API Key** - Your choice or auto-generated (save this!)
-3. **Region** - Where to deploy (default: `us-central1`)
-4. **Service Name** - Name for Cloud Run service (default: `nca-toolkit`)
-5. **Bucket Name** - For file storage (default: `{project-id}-nca-toolkit`)
+1. **Project** - Select from numbered list (just type "1", "2", etc.)
+2. **API Key** - Your choice or press Enter for auto-generated (save this!)
+3. **Region** - Where to deploy (press Enter for default: `us-central1`)
+
+Everything else (service account, bucket, permissions) is automatic.
 
 ---
 
@@ -144,6 +159,8 @@ chmod +x deploy.sh
 | Issue | Cause | Solution |
 |-------|-------|----------|
 | "Billing not enabled" | No payment method | [Enable billing](https://console.cloud.google.com/billing) |
+| "Max instances must be set to 2 or fewer" | Memory quota exceeded | Already handled - installer uses max 2 instances |
+| "Quota violated: MemAllocPerProjectRegion" | Need more capacity | [Request quota increase](https://console.cloud.google.com/iam-admin/quotas) |
 | "Permission denied" on service account | Org policy | Contact Workspace admin |
 | "Public access prevention" on bucket | Org policy | Contact Workspace admin or use different project |
 | Deployment timeout | Large image pull | Wait and retry |

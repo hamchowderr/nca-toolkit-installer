@@ -58,14 +58,30 @@ echo -e "${GREEN}✓ Authenticated as: ${ACCOUNT}${NC}"
 echo ""
 echo -e "${YELLOW}[2/8] Project Selection${NC}"
 
-# Check if project is already set (from tutorial panel or environment)
+# Try to detect project from various sources
+PROJECT_ID=""
+
+# 1. Check environment variables
 if [ -n "$GOOGLE_CLOUD_PROJECT" ]; then
     PROJECT_ID="$GOOGLE_CLOUD_PROJECT"
-    echo -e "${GREEN}✓ Using project from Cloud Shell: ${PROJECT_ID}${NC}"
 elif [ -n "$DEVSHELL_PROJECT_ID" ]; then
     PROJECT_ID="$DEVSHELL_PROJECT_ID"
-    echo -e "${GREEN}✓ Using project from Cloud Shell: ${PROJECT_ID}${NC}"
-else
+fi
+
+# 2. If no env var, check gcloud config
+if [ -z "$PROJECT_ID" ]; then
+    CONFIGURED_PROJECT=$(gcloud config get-value project 2>/dev/null)
+    if [ -n "$CONFIGURED_PROJECT" ] && [ "$CONFIGURED_PROJECT" != "(unset)" ]; then
+        echo -e "Detected project: ${BLUE}${CONFIGURED_PROJECT}${NC}"
+        read -p "Use this project? (Y/n): " USE_CONFIGURED
+        if [ -z "$USE_CONFIGURED" ] || [ "$USE_CONFIGURED" = "Y" ] || [ "$USE_CONFIGURED" = "y" ]; then
+            PROJECT_ID="$CONFIGURED_PROJECT"
+        fi
+    fi
+fi
+
+# 3. If still no project, show numbered list
+if [ -z "$PROJECT_ID" ]; then
     echo ""
     # Get projects into an array
     mapfile -t PROJECTS < <(gcloud projects list --format="value(projectId)" 2>/dev/null)
