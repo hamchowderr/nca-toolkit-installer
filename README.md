@@ -1,0 +1,200 @@
+# NCA Toolkit - One-Click GCP Installer
+
+Deploy the [No-Code Architects Toolkit](https://github.com/stephengpope/no-code-architects-toolkit) to Google Cloud Platform with one click.
+
+---
+
+## Why This Exists
+
+The [NCA Toolkit](https://github.com/stephengpope/no-code-architects-toolkit) is an incredibly powerful API for video/audio/image processing - but deploying it to Google Cloud manually is tedious. You need to enable APIs, create service accounts, configure IAM roles, generate credentials, create buckets, set permissions, and configure Cloud Run with the right specs. One wrong step and it doesn't work.
+
+This installer automates all of that into a single script.
+
+**Why Google Cloud?**
+
+Along with Hostinger, Google Cloud is one of the best platforms for hosting the NCA Toolkit because **you only pay for what you use**. With Cloud Run's scale-to-zero, you're not paying for idle servers - only actual processing time. Perfect for automation workflows that run periodically rather than 24/7.
+
+---
+
+## 🚀 Deploy Now
+
+Click the button below to open Google Cloud Shell and run the installer:
+
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/hamchowderr/nca-toolkit-installer&cloudshell_git_branch=main&cloudshell_workspace=.&cloudshell_tutorial=tutorial.md)
+
+---
+
+## Prerequisites
+
+Before clicking the button, make sure you have:
+
+- ✅ **Google Workspace account** (recommended)
+- ✅ **GCP Project** with billing enabled
+- ✅ ~5 minutes
+
+> **New to GCP?** New accounts get $300 in free credits. [Sign up here](https://cloud.google.com/).
+
+---
+
+## What This Installer Does
+
+| Step | Manual Process | This Installer |
+|------|---------------|----------------|
+| 1 | Enable 5 APIs manually | ✅ Automatic |
+| 2 | Create service account | ✅ Automatic |
+| 3 | Assign IAM roles | ✅ Automatic |
+| 4 | Generate JSON credentials | ✅ Automatic |
+| 5 | Create storage bucket | ✅ Automatic + public read |
+| 6 | Deploy Cloud Run (16GB, 4 CPU, Gen2) | ✅ Pre-configured |
+| 7 | Set all environment variables | ✅ Automatic |
+
+**Time:** ~30 min manual → ~5 min with installer
+
+---
+
+## Deployment Specs
+
+The installer configures Cloud Run with these settings (based on [official NCA docs](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md)):
+
+| Setting | Value |
+|---------|-------|
+| Memory | 16 GB |
+| CPU | 4 vCPUs |
+| Min Instances | 0 (scale to zero) |
+| Max Instances | 2 |
+| Timeout | 300 seconds |
+| Execution Environment | Gen2 |
+| CPU Boost | Enabled |
+
+### Scaling & Quotas
+
+The default **max 2 instances** is set to work within GCP's default memory quota (~40GB per region). This supports 2-4 concurrent video processing jobs.
+
+**Need more capacity?**
+
+1. Request a quota increase: [GCP Console → IAM & Admin → Quotas](https://console.cloud.google.com/iam-admin/quotas) → search "Total memory" → Request increase
+2. After approval, edit your Cloud Run service to increase max instances
+
+| Max Instances | Total Memory | Concurrent Jobs |
+|---------------|--------------|------------------|
+| 2 (default) | 32 GB | ~2-4 |
+| 5 | 80 GB | ~5-10 |
+| 10 | 160 GB | ~10-20 |
+
+---
+
+## What You'll Be Asked
+
+The script prompts for just 2 things:
+
+1. **Project** - Select from numbered list (just type "1", "2", etc.)
+2. **API Key** - Your choice or press Enter for auto-generated (save this!)
+3. **Region** - Where to deploy (press Enter for default: `us-central1`)
+
+Everything else (service account, bucket, permissions) is automatic.
+
+---
+
+## After Deployment
+
+You'll receive:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║                    DEPLOYMENT COMPLETE!                       ║
+╚══════════════════════════════════════════════════════════════╝
+
+  Service URL:    https://nca-toolkit-xxxxx-xx.a.run.app
+  API Key:        your-api-key-here
+  Bucket:         your-project-nca-toolkit
+  Region:         us-central1
+```
+
+Config is also saved to `~/nca-toolkit-config.txt` in Cloud Shell.
+
+---
+
+## Test Your Deployment
+
+```bash
+curl -X GET "YOUR_SERVICE_URL/v1/toolkit/test" \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+**Expected response:**
+```json
+{
+  "code": 200,
+  "message": "success"
+}
+```
+
+---
+
+## Using with n8n / Make
+
+### n8n
+1. Add **HTTP Request** node
+2. Method: `GET`
+3. URL: `https://YOUR-SERVICE-URL/v1/toolkit/test`
+4. Header: `x-api-key` = `YOUR-API-KEY`
+
+### Make
+1. Add **HTTP > Make a request** module
+2. Method: `GET`
+3. URL: `https://YOUR-SERVICE-URL/v1/toolkit/test`
+4. Header: `x-api-key` = `YOUR-API-KEY`
+
+### Postman
+1. Import the [Postman Collection](https://bit.ly/49Gkh61)
+2. Set environment variables:
+   - `base_url`: Your Service URL
+   - `x-api-key`: Your API Key
+
+---
+
+## Manual Installation (Alternative)
+
+If the button doesn't work, run manually in [Cloud Shell](https://shell.cloud.google.com):
+
+```bash
+git clone https://github.com/hamchowderr/nca-toolkit-installer.git
+cd nca-toolkit-installer
+chmod +x deploy.sh
+./deploy.sh
+```
+
+---
+
+## Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| "Billing not enabled" | No payment method | [Enable billing](https://console.cloud.google.com/billing) |
+| "Max instances must be set to 2 or fewer" | Memory quota exceeded | Already handled - installer uses max 2 instances |
+| "Quota violated: MemAllocPerProjectRegion" | Need more capacity | [Request quota increase](https://console.cloud.google.com/iam-admin/quotas) |
+| "Permission denied" on service account | Org policy | Contact Workspace admin |
+| "Public access prevention" on bucket | Org policy | Contact Workspace admin or use different project |
+| Deployment timeout | Large image pull | Wait and retry |
+| `401 Unauthorized` on test | Wrong API key | Check key matches what you entered |
+
+---
+
+## Resources
+
+- [NCA Toolkit Repository](https://github.com/stephengpope/no-code-architects-toolkit)
+- [Full GCP Installation Docs](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md)
+- [API Documentation](https://github.com/stephengpope/no-code-architects-toolkit/tree/main/docs)
+- [What is the NCA Toolkit API?](https://www.youtube.com/watch?v=ELs3_ovW7tc)
+- [Video Tutorial](https://youtu.be/6bC93sek9v8)
+- [NCA Community](https://skool.com/no-code-architects)
+
+---
+
+## License
+
+This installer is provided as-is. The NCA Toolkit itself is licensed under [GPL-2.0](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/LICENSE).
+
+---
+
+<sub>📊 Usage is tracked (email only) to help improve this tool.</sub>

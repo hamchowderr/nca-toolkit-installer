@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+
+# GCP credentials (never commit these)
+*.json
+!app.json
+
+# Local config
+.env
+.env.local
+
+# Claude Code
+.claude/
